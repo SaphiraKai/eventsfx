@@ -1,0 +1,12 @@
+[Unit]
+Description=Input event sounds daemon (eventsfx)
+After=default.target
+
+[Service]
+Type=simple
+Restart=on-failure
+RestartSec=5
+ExecStart=/usr/bin/eventsfx
+
+[Install]
+WantedBy=default.target

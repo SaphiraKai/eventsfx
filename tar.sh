@@ -9,8 +9,9 @@ printf "r%s.%s" "$(git rev-list --count HEAD)" "$(git rev-parse --short HEAD)")
 
 files=('audio/'
        'src/'
-       'Cargo.toml')
+       'Cargo.toml'
+       'eventsfx.service')
 
-tar -cf src-$version.tar ${files[@]}
+tar -cf pkgbuild/src-$version.tar ${files[@]}
 
-echo "created src-$version.tar"
+echo "created pkgbuild/src-$version.tar"

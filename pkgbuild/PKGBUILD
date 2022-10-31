@@ -1,6 +1,6 @@
 # Maintainer: Saphira Kai
 pkgname=eventsfx
-pkgver=0
+pkgver=r3.d637514
 pkgrel=1
 epoch=
 pkgdesc="A lightweight daemon for adding UI interaction sounds on input events"
@@ -44,6 +44,8 @@ package() {
 	
 	cargo build --release
 	
-	install -Dm 755 audio/ $pkgdir/usr/share/eventsfx/audio/
+	mkdir -p $pkgdir/usr/share/eventsfx/audio/
+	install -Dm 644 audio/* $pkgdir/usr/share/eventsfx/audio/
 	install -Dm 755 target/release/eventsfx $pkgdir/usr/bin/eventsfx
+	install -Dm 644 eventsfx.service $pkgdir/usr/lib/systemd/user/eventsfx.service
 }
