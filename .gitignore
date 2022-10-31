@@ -1,3 +1,6 @@
 /target
 /playing.log
 /pkgbuild/src-*.tar
+/pkgbuild/src/
+/pkgbuild/pkg/
+/pkgbuild/*.pkg.tar.*
