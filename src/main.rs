@@ -1,7 +1,7 @@
 #![allow(clippy::bad_bit_mask)]
 
 use std::fs::{File, OpenOptions};
-use std::io::{BufReader, Write};
+use std::io::BufReader;
 use std::os::unix::{
     fs::OpenOptionsExt,
     io::{FromRawFd, IntoRawFd, RawFd},
@@ -37,11 +37,13 @@ use SessionType::*;
 
 fn active_is_fullscreen(session: SessionType) -> bool {
     let command = match session {
-        X11 => "bash -c 'xprop -id `xprop -root _NET_ACTIVE_WINDOW | grep -oP 'window id # \\K.*$'` | grep _NET_WM_STATE_FULLSCREEN >/dev/null'",
-        Hyprland => r#"bash -c '[ `hyprctl activewindow -j | jq -r '.size | "\(.[0])x\(.[1])"'` = `hyprctl monitors -j | jq -r ".[] | select(.id == \`hyprctl activewindow -j | jq '.monitor'\`) | \"\(.width)x\(.height)\""` ]'"#,
+        X11 => "xprop -id `xprop -root _NET_ACTIVE_WINDOW | grep -oP 'window id # \\K.*$'` | grep _NET_WM_STATE_FULLSCREEN >/dev/null",
+        Hyprland => r#"[ `hyprctl activewindow -j | jq -r '.size | "\(.[0])x\(.[1])"'` != `hyprctl monitors -j | jq -r ".[] | select(.id == \`hyprctl activewindow -j | jq '.monitor'\`) | \"\(.width)x\(.height)\""` ]"#,
     };
 
-    let status = Command::new(command)
+    let status = Command::new("bash")
+        .arg("-c")
+        .arg(command)
         .status()
         .expect("failed to poll for active window's fullscreen state");
 
@@ -96,22 +98,14 @@ fn main() {
 
     let playing_clone = Arc::clone(&playing);
 
-    spawn(move || {
-        let mut log = OpenOptions::new()
-            .append(true)
-            .create(true)
-            .open("playing.log")
-            .unwrap();
+    spawn(move || loop {
+        let start = timestamp();
 
-        loop {
-            let playing = active_is_fullscreen(Hyprland);
+        let playing = active_is_fullscreen(Hyprland);
+        playing_clone.store(playing, Relaxed);
 
-            log.write_all(format!("playing: {}", playing).as_bytes())
-                .unwrap();
-            playing_clone.store(playing, Relaxed);
-
-            sleep(Duration::new(0, 500_000));
-        }
+        let delta = timestamp() - start;
+        sleep(Duration::from_millis(500) - delta);
     });
 
     let modkey_keys = [42, 29, 125, 56, 100, 97, 54, 46];
