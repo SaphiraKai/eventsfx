@@ -133,24 +133,29 @@ fn main() {
         for event in &mut input {
             if let Keyboard(Key(key)) = &event {
                 if let KeyState::Pressed = key.key_state() {
-                    println!("playing: {}, key: {}", playing.load(Relaxed), key.key());
+                    println!("playing: {}, key: {}", is_playing, key.key());
 
-                    if modkey_keys.contains(&key.key()) {
-                        stream_handle
-                            .play_raw(source_modkey.clone().convert_samples())
-                            .unwrap();
-                    } else {
-                        stream_handle
-                            .play_raw(source_key.clone().convert_samples())
-                            .unwrap();
+                    if is_playing {
+                        if modkey_keys.contains(&key.key()) {
+                            stream_handle
+                                .play_raw(source_modkey.clone().convert_samples())
+                                .unwrap();
+                        } else {
+                            stream_handle
+                                .play_raw(source_key.clone().convert_samples())
+                                .unwrap();
+                        }
                     }
                 }
             } else if let Pointer(Button(button)) = &event {
                 if let ButtonState::Pressed = button.button_state() {
                     println!("button: {}", button.button());
-                    stream_handle
-                        .play_raw(source_click.clone().convert_samples())
-                        .unwrap();
+
+                    if is_playing {
+                        stream_handle
+                            .play_raw(source_click.clone().convert_samples())
+                            .unwrap();
+                    }
                 }
             } else if let Pointer(ScrollContinuous(scroll)) = &event {
                 scroll_count += 1;
