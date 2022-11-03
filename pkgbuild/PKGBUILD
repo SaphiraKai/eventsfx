@@ -1,6 +1,6 @@
 # Maintainer: Saphira Kai
 pkgname=eventsfx
-pkgver=r4.078e7df
+pkgver=r5.a16f7b5
 pkgrel=1
 epoch=
 pkgdesc="A lightweight daemon for adding UI interaction sounds on input events"
