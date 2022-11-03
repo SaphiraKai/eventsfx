@@ -93,6 +93,7 @@ fn timestamp() -> Duration {
         .duration_since(UNIX_EPOCH)
         .expect("Time went backwards")
 }
+
 fn main() {
     let playing = Arc::new(AtomicBool::new(true));
 
@@ -129,6 +130,7 @@ fn main() {
     loop {
         let start = timestamp();
         let is_playing = playing.load(Relaxed);
+
         input.dispatch().unwrap();
         for event in &mut input {
             if let Keyboard(Key(key)) = &event {
@@ -183,6 +185,7 @@ fn main() {
                 // println!("event: {:?}", event);
             }
         }
+
         let delta = timestamp() - start;
         sleep(Duration::from_millis(5) - delta);
     }
