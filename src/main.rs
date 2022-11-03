@@ -11,7 +11,7 @@ use std::process::Command;
 use std::sync::atomic::{AtomicBool, Ordering::Relaxed};
 use std::sync::Arc;
 use std::thread::{sleep, spawn};
-use std::time::Duration;
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use dirs::config_dir;
 use input::event::{
@@ -86,6 +86,11 @@ fn audio_file_reader(file: &dyn AsRef<Path>) -> BufReader<File> {
     )
 }
 
+fn timestamp() -> Duration {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("Time went backwards")
+}
 fn main() {
     let playing = Arc::new(AtomicBool::new(true));
 
@@ -128,6 +133,8 @@ fn main() {
     let mut scroll_count = 0;
 
     loop {
+        let start = timestamp();
+        let is_playing = playing.load(Relaxed);
         input.dispatch().unwrap();
         for event in &mut input {
             if let Keyboard(Key(key)) = &event {
@@ -177,5 +184,7 @@ fn main() {
                 // println!("event: {:?}", event);
             }
         }
+        let delta = timestamp() - start;
+        sleep(Duration::from_millis(5) - delta);
     }
 }
