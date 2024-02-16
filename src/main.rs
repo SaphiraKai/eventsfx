@@ -28,6 +28,9 @@ use input::{Libinput, LibinputInterface};
 use libc::{O_RDONLY, O_RDWR, O_WRONLY};
 use rodio::{source::Source, Decoder, OutputStream};
 
+const NAME: Option<&str> = option_env!("CARGO_PKG_NAME");
+const VERSION: Option<&str> = option_env!("CARGO_PKG_VERSION");
+
 enum SessionType {
     X11,
     Hyprland,
@@ -73,14 +76,17 @@ impl LibinputInterface for Interface {
 fn audio_file_reader(file: &dyn AsRef<Path>) -> BufReader<File> {
     let file = file.as_ref();
     let mut path = config_dir().unwrap().join("eventsfx").join(file);
+
     if !path.exists() {
         path = Path::new("audio").join(file);
-        if !path.exists() {
-            path = Path::new("/usr/share/eventsfx/audio").join(file);
-            if !path.exists() {
-                panic!("unable to locate audio file: {}", &file.display())
-            }
-        }
+    }
+
+    if !path.exists() {
+        path = Path::new("/usr/share/eventsfx/audio").join(file);
+    }
+
+    if !path.exists() {
+        panic!("unable to locate audio file: {}", &file.display())
     }
 
     BufReader::new(
@@ -95,8 +101,13 @@ fn timestamp() -> Duration {
 }
 
 fn main() {
-    let playing = Arc::new(AtomicBool::new(true));
+    println!(
+        "-- running {} {} --",
+        NAME.unwrap_or("unknown"),
+        VERSION.unwrap_or("unknown")
+    );
 
+    let playing = Arc::new(AtomicBool::new(true));
     let playing_clone = Arc::clone(&playing);
 
     spawn(move || loop {
