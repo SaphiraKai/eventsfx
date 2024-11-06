@@ -2,10 +2,7 @@
 
 use std::fs::{File, OpenOptions};
 use std::io::BufReader;
-use std::os::unix::{
-    fs::OpenOptionsExt,
-    io::{FromRawFd, IntoRawFd, RawFd},
-};
+use std::os::unix::{fs::OpenOptionsExt, io::OwnedFd};
 use std::path::Path;
 use std::process::Command;
 use std::sync::atomic::{AtomicBool, Ordering::Relaxed};
@@ -19,7 +16,7 @@ use input::event::{
     pointer::{
         Axis::{Horizontal, Vertical},
         ButtonState,
-        PointerEvent::{Button, ScrollContinuous},
+        PointerEvent::{Button, ScrollContinuous, ScrollWheel},
         PointerScrollEvent,
     },
     Event::{Keyboard, Pointer},
@@ -56,20 +53,18 @@ fn active_is_fullscreen(session: SessionType) -> bool {
 struct Interface;
 
 impl LibinputInterface for Interface {
-    fn open_restricted(&mut self, path: &Path, flags: i32) -> Result<RawFd, i32> {
+    fn open_restricted(&mut self, path: &Path, flags: i32) -> Result<OwnedFd, i32> {
         OpenOptions::new()
             .custom_flags(flags)
             .read((flags & O_RDONLY != 0) | (flags & O_RDWR != 0))
             .write((flags & O_WRONLY != 0) | (flags & O_RDWR != 0))
             .open(path)
-            .map(|file| file.into_raw_fd())
+            .map(|file| file.into())
             .map_err(|err| err.raw_os_error().expect("unable to open input device"))
     }
 
-    fn close_restricted(&mut self, fd: RawFd) {
-        unsafe {
-            File::from_raw_fd(fd);
-        }
+    fn close_restricted(&mut self, fd: OwnedFd) {
+        drop(File::from(fd));
     }
 }
 
@@ -191,6 +186,14 @@ fn main() {
                         .unwrap();
 
                     scroll_count = 0;
+                }
+            } else if let Pointer(ScrollWheel(scroll)) = &event {
+                println!("scroll: {:#?}", scroll);
+
+                if is_playing {
+                    stream_handle
+                        .play_raw(source_scroll.clone().convert_samples())
+                        .unwrap();
                 }
             } else {
                 // println!("event: {:?}", event);
